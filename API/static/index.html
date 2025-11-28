@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Mushroom Capture</title>
+</head>
+<body>
+    <h1>Capture Jamur dari Webcam</h1>
+
+    <video id="video" width="320" height="240" autoplay></video>
+    <br>
+    <button id="captureBtn">Capture & Predict</button>
+    <canvas id="canvas" width="320" height="240" style="display:none;"></canvas>
+
+    <h3>Hasil Prediksi:</h3>
+    <pre id="result"></pre>
+
+    <script>
+        // 1. Tampilkan webcam
+        navigator.mediaDevices.getUserMedia({ video: true })
+            .then(stream => {
+                document.getElementById("video").srcObject = stream;
+            });
+
+        // 2. Capture dan kirim ke API
+        document.getElementById("captureBtn").onclick = async function () {
+            const video = document.getElementById("video");
+            const canvas = document.getElementById("canvas");
+            const context = canvas.getContext("2d");
+
+            // ambil frame dari webcam
+            context.drawImage(video, 0, 0, 320, 240);
+
+            const blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg"));
+
+            const formData = new FormData();
+            formData.append("file", blob, "capture.jpg");
+
+            // 3. Kirim ke API FastAPI
+            const response = await fetch("http://127.0.0.1:8000/predict", {
+                method: "POST",
+                body: formData
+            });
+
+            const data = await response.json();
+            document.getElementById("result").textContent = JSON.stringify(data, null, 2);
+        };
+    </script>
+</body>
+</html>
